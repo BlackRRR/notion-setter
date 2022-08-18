@@ -76,7 +76,7 @@ func startBot(b *bot.GlobalBot, log log.Logger) {
 
 func startPrometheusHandler(logger log.Logger) {
 	http.Handle("/metrics", promhttp.Handler())
-	logger.Ok("Metrics can be read from %s port", "7011")
+	logger.Ok("Metrics can be read from %s port", "7012")
 	metricErr := http.ListenAndServe(":7012", nil)
 	if metricErr != nil {
 		logger.Fatal("metrics stoped by metricErr: %s\n", metricErr.Error())

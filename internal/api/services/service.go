@@ -144,7 +144,7 @@ func createSituationFromMsg(botLang string, message *tgbotapi.Message, user *mod
 		BotLang: botLang,
 		User:    user,
 		Params: &model.Parameters{
-			Level: redis.GetLevel(botLang, user.ID),
+			Level: redis.GetLevel(user.ID),
 		},
 	}
 }
@@ -161,7 +161,7 @@ func (b *BaseBot) createSituationFromCallback(botLang string, callbackQuery *tgb
 		User:          user,
 		Command:       strings.Split(callbackQuery.Data, "?")[0],
 		Params: &model.Parameters{
-			Level: redis.GetLevel(botLang, callbackQuery.From.ID),
+			Level: redis.GetLevel(callbackQuery.From.ID),
 		},
 	}, nil
 }

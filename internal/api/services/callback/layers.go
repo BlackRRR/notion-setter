@@ -18,7 +18,7 @@ func (h *CallBackHandlers) GetHandler(command string) model.Handler {
 
 func (h *CallBackHandlers) Init() {
 	//Money command
-	h.OnCommand("/bot", h.TaskBot)
+	h.OnCommand("/service", h.TaskService)
 	h.OnCommand("/lang", h.TaskLang)
 	h.OnCommand("/status", h.TaskStatus)
 	h.OnCommand("/task_upload", h.TaskUpload)

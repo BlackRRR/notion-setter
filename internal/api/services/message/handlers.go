@@ -1,24 +1,62 @@
 package message
 
 import (
+	"context"
+	"github.com/BlackRRR/notion-setter/internal/api/config"
 	"github.com/BlackRRR/notion-setter/internal/api/model"
 	"github.com/BlackRRR/notion-setter/internal/api/repository/redis"
 	"github.com/bots-empire/base-bot/msgs"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/jomei/notionapi"
 )
 
 func (h *MessagesHandlers) StartCommand(s *model.Situation) error {
 	text := h.BaseBot.Bot.LangText(s.BotLang, "task_start")
-	redis.RdbSetUser(s.BotLang, s.User.ID, "main")
+	redis.RdbSetUser(s.User.ID, "main")
 
-	markUp := msgs.NewIlMarkUp(
-		msgs.NewIlRow(msgs.NewIlDataButton("task_bot_referral", "/bot?referral")),
-		msgs.NewIlRow(msgs.NewIlDataButton("task_bot_miner", "/bot?miner")),
-		msgs.NewIlRow(msgs.NewIlDataButton("task_bot_voice", "/bot?voice")),
-		msgs.NewIlRow(msgs.NewIlDataButton("task_bot_youtube", "/bot?youtube")),
-		msgs.NewIlRow(msgs.NewIlDataButton("task_bot_tiktok", "/bot?tiktok")),
-	).Build(h.BaseBot.Bot.Language[s.BotLang])
+	database, err := h.BaseBot.Bot.Notion.Database.Get(context.Background(), config.DatabaseID)
+	if err != nil {
+		return err
+	}
 
-	_, err := h.BaseBot.Msgs.NewIDParseMarkUpMessage(s.User.ID, markUp, text)
+	properties := database.Properties["Bot"].(*notionapi.MultiSelectPropertyConfig)
+
+	var buttons []tgbotapi.InlineKeyboardButton
+	var optionLen int
+
+	for i := range properties.MultiSelect.Options {
+		data := "/service?" + properties.MultiSelect.Options[i].Name
+		button := tgbotapi.InlineKeyboardButton{
+			Text:         properties.MultiSelect.Options[i].Name,
+			CallbackData: &data,
+		}
+		buttons = append(
+			buttons,
+			button)
+		optionLen++
+
+	}
+
+	var counter int
+	var markUp tgbotapi.InlineKeyboardMarkup
+	if markUp.InlineKeyboard == nil {
+		markUp.InlineKeyboard = make([][]tgbotapi.InlineKeyboardButton, optionLen/3+1)
+	}
+
+	for i := range buttons {
+		if i == 0 {
+			markUp.InlineKeyboard[counter] = append(markUp.InlineKeyboard[counter], buttons[i])
+			continue
+		}
+
+		if i%3 == 0 {
+			counter++
+		}
+
+		markUp.InlineKeyboard[counter] = append(markUp.InlineKeyboard[counter], buttons[i])
+	}
+
+	_, err = h.BaseBot.Msgs.NewIDParseMarkUpMessage(s.User.ID, markUp, text)
 	if err != nil {
 		return err
 	}
@@ -37,7 +75,7 @@ func (h *MessagesHandlers) TaskTitle(s *model.Situation) error {
 		return err
 	}
 
-	redis.RdbSetUser(s.BotLang, s.User.ID, "/task_description")
+	redis.RdbSetUser(s.User.ID, "/task_description")
 
 	return nil
 }
@@ -47,7 +85,7 @@ func (h *MessagesHandlers) TaskDescription(s *model.Situation) error {
 	model.GlobalParameters.UpdateDescription(description, s.User.ID)
 
 	text := h.BaseBot.Bot.LangText(s.BotLang, "task_description_added")
-	redis.RdbSetUser(s.BotLang, s.User.ID, "main")
+	redis.RdbSetUser(s.User.ID, "main")
 
 	markUp := msgs.NewIlMarkUp(
 		msgs.NewIlRow(msgs.NewIlDataButton("task_upload", "/task_upload")),

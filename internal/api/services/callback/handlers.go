@@ -6,44 +6,52 @@ import (
 	"github.com/BlackRRR/notion-setter/internal/api/model"
 	"github.com/BlackRRR/notion-setter/internal/api/repository/redis"
 	"github.com/bots-empire/base-bot/msgs"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jomei/notionapi"
 	"strings"
 )
 
-func (h *CallBackHandlers) TaskBot(s *model.Situation) error {
+func (h *CallBackHandlers) TaskService(s *model.Situation) error {
 	data := strings.Split(s.CallbackQuery.Data, "?")
-	bot := data[1]
-	model.GlobalParameters.UpdateBot(s.User.ID, bot)
+	service := data[1]
+	model.GlobalParameters.UpdateBot(s.User.ID, service)
 
 	text := h.BaseBot.Bot.LangText(s.BotLang, "task_lang")
-	redis.RdbSetUser(s.BotLang, s.User.ID, "main")
+	redis.RdbSetUser(s.User.ID, "main")
 
-	database, err := h.BaseBot.Bot.Notion.Database.Get(context.Background(), "7ae79a1cbda446f3895208343d6854ac")
+	database, err := h.BaseBot.Bot.Notion.Database.Get(context.Background(), config.DatabaseID)
 	if err != nil {
 		return err
 	}
 
 	properties := database.Properties["Bot Lang"].(*notionapi.MultiSelectPropertyConfig)
 
-	var buttons []msgs.InlineDataButton
+	var buttons []tgbotapi.InlineKeyboardButton
 	var optionLen int
 
 	for i := range properties.MultiSelect.Options {
+		data := "/lang?" + properties.MultiSelect.Options[i].Name
+		button := tgbotapi.InlineKeyboardButton{
+			Text:         properties.MultiSelect.Options[i].Name,
+			CallbackData: &data,
+		}
 		buttons = append(
 			buttons,
-			msgs.NewIlDataButton(
-				"task_lang_"+properties.MultiSelect.Options[i].Name,
-				"/lang?"+properties.MultiSelect.Options[i].Name),
-		)
+			button)
 		optionLen++
 
 	}
 
 	var counter int
-	rows := make([]msgs.InlineRow, optionLen/3+1)
+	var markUp tgbotapi.InlineKeyboardMarkup
+
+	if markUp.InlineKeyboard == nil {
+		markUp.InlineKeyboard = make([][]tgbotapi.InlineKeyboardButton, optionLen/3+1)
+	}
+
 	for i := range buttons {
 		if i == 0 {
-			rows[counter].Buttons = append(rows[counter].Buttons, buttons[i])
+			markUp.InlineKeyboard[counter] = append(markUp.InlineKeyboard[counter], buttons[i])
 			continue
 		}
 
@@ -51,10 +59,8 @@ func (h *CallBackHandlers) TaskBot(s *model.Situation) error {
 			counter++
 		}
 
-		rows[counter].Buttons = append(rows[counter].Buttons, buttons[i])
+		markUp.InlineKeyboard[counter] = append(markUp.InlineKeyboard[counter], buttons[i])
 	}
-
-	markUp := msgs.NewIlMarkUp(rows...).Build(h.BaseBot.Bot.Language[s.BotLang])
 
 	_, err = h.BaseBot.Msgs.NewIDParseMarkUpMessage(s.User.ID, markUp, text)
 	if err != nil {
@@ -70,7 +76,7 @@ func (h *CallBackHandlers) TaskLang(s *model.Situation) error {
 	model.GlobalParameters.UpdateLang(s.User.ID, lang)
 
 	text := h.BaseBot.Bot.LangText(s.BotLang, "task_status")
-	redis.RdbSetUser(s.BotLang, s.User.ID, "main")
+	redis.RdbSetUser(s.User.ID, "main")
 
 	markUp := msgs.NewIlMarkUp(
 		msgs.NewIlRow(msgs.NewIlDataButton("task_status_no_status", "/status? ")),
@@ -97,12 +103,12 @@ func (h *CallBackHandlers) TaskStatus(s *model.Situation) error {
 		return err
 	}
 
-	redis.RdbSetUser(s.BotLang, s.User.ID, "/task_title")
+	redis.RdbSetUser(s.User.ID, "/task_title")
 	return nil
 }
 
 func (h *CallBackHandlers) TaskUpload(s *model.Situation) error {
-	redis.RdbSetUser(s.BotLang, s.User.ID, "main")
+	redis.RdbSetUser(s.User.ID, "main")
 
 	page, err := h.BaseBot.Bot.Notion.Page.Create(context.Background(), &notionapi.PageCreateRequest{
 		Parent: notionapi.Parent{

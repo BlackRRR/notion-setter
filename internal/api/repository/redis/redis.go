@@ -21,7 +21,7 @@ func StartRedis() *redis.Client {
 	return rdb
 }
 
-func RdbSetUser(botLang string, ID int64, level string) {
+func RdbSetUser(ID int64, level string) {
 	userID := userIDToRdb(ID)
 	_, err := bot.Bot.Rdb.Set(userID, level, 0).Result()
 	if err != nil {
@@ -33,7 +33,7 @@ func userIDToRdb(userID int64) string {
 	return "user:" + strconv.FormatInt(userID, 10)
 }
 
-func GetLevel(botLang string, id int64) string {
+func GetLevel(id int64) string {
 	userID := userIDToRdb(id)
 	have, err := bot.Bot.Rdb.Exists(userID).Result()
 	if err != nil {
