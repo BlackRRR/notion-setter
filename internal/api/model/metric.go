@@ -7,20 +7,22 @@ import (
 
 //goland:noinspection ALL
 var (
-	// income
-	TotalIncome = promauto.NewCounterVec(
+	//restart
+	HandleRestart = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "total_income_users",
-			Help: "Total count of income users",
+			Name: "count_of_restart",
+			Help: "Total count of restart",
 		},
-		[]string{"bot_link"},
+		[]string{"service_restart"},
 	)
-	IncomeBySource = promauto.NewCounterVec(
+
+	//livez
+	HandleLiveTime = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "type_income_source",
-			Help: "Source where the user came from",
+			Name: "live_time",
+			Help: "Show live time",
 		},
-		[]string{"bot_link", "bot_name", "source"},
+		[]string{"service_live"},
 	)
 
 	// updates
@@ -30,37 +32,5 @@ var (
 			Help: "Total count of handle updates",
 		},
 		[]string{"bot_link", "bot_name"},
-	)
-
-	// clicks
-	MoreMoneyButtonClick = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "more_money_button_click",
-			Help: "Total click on more money button",
-		},
-		[]string{"bot_link", "bot_name"},
-	)
-	CheckSubscribe = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "total_check_subscribe",
-			Help: "Total check subscribe",
-		},
-		[]string{"bot_link", "bot_name", "advert_link", "source"},
-	)
-
-	// mailing
-	MailToUser = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "total_mailing_users",
-			Help: "Total check subscribe",
-		},
-		[]string{"bot_name"},
-	)
-	BlockUser = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "total_block_users",
-			Help: "Total blocked users",
-		},
-		[]string{"bot_name"},
 	)
 )

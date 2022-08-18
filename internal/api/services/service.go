@@ -138,16 +138,6 @@ func (b *BaseBot) printNewUpdate(update *tgbotapi.Update, logger log.Logger) {
 	)
 }
 
-func (b *BaseBot) SendTodayUpdateMsg() {
-	model.UpdateStatistic.Mu.Lock()
-	defer model.UpdateStatistic.Mu.Unlock()
-
-	text := fmt.Sprintf(updateCounterHeader, model.UpdateStatistic.Counter)
-	b.Msgs.SendNotificationToDeveloper(text, true)
-
-	model.UpdateStatistic.Counter = 0
-}
-
 func createSituationFromMsg(botLang string, message *tgbotapi.Message, user *model.User) *model.Situation {
 	return &model.Situation{
 		Message: message,

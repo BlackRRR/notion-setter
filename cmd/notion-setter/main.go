@@ -23,34 +23,35 @@ import (
 func main() {
 	rand.Seed(time.Now().Unix())
 
-	logger := log.NewDefaultLogger().Prefix("notion-creator Bot")
-	log.PrintLogo("notion-creator Bot", []string{"FFD700"})
+	logger := log.NewDefaultLogger().Prefix("notion-setter Bot")
+	log.PrintLogo("notion-setter Bot", []string{"8000FF"})
 
 	model.UploadParams()
 	bot.FillBotsConfig()
 
-	//go startPrometheusHandler(logger)
+	go startPrometheusHandler(logger)
+	go serviceLive()
+	model.HandleRestart.WithLabelValues("notion_setter").Inc()
 
-	srvs := startAllBot(logger)
+	srvs := startAllServices(logger)
 	bot.UploadUpdateStatistic()
 
 	startHandlers(srvs, logger)
 }
 
-func startAllBot(log log.Logger) *services.BaseBot {
+func startAllServices(log log.Logger) *services.BaseBot {
 	globalBot := bot.Bot
 	startBot(globalBot, log)
-	startNotionClient(globalBot)
 	//1418862576, -1001736803459
 	service := msgs.NewService(globalBot, []int64{872383555})
 
 	rep := mysql.NewRepository(globalBot, service)
 	baseBot := services.NewBaseBotService(globalBot, rep, service)
 
-	globalBot.MessageHandler = NewMessagesHandler(baseBot, rep)
-	globalBot.CallbackHandler = NewCallbackHandler(baseBot, rep)
+	globalBot.MessageHandler = newMessagesHandler(baseBot, rep)
+	globalBot.CallbackHandler = newCallbackHandler(baseBot, rep)
 
-	log.Ok("All bots is running")
+	log.Ok("All services is running")
 	return baseBot
 }
 
@@ -67,13 +68,10 @@ func startBot(b *bot.GlobalBot, log log.Logger) {
 
 	b.Rdb = redis.StartRedis()
 	b.DataBase = mysql.UploadDataBase(b.BotLang)
+	b.Notion = notionapi.NewClient(notionapi.Token(b.NotionToken))
 
 	b.ParseCommandsList()
 	b.ParseLangMap()
-}
-
-func startNotionClient(b *bot.GlobalBot) {
-	b.Notion = notionapi.NewClient(notionapi.Token(b.NotionToken))
 }
 
 func startPrometheusHandler(logger log.Logger) {
@@ -96,12 +94,19 @@ func startHandlers(baseBot *services.BaseBot, logger log.Logger) {
 
 	baseBot.Msgs.SendNotificationToDeveloper("Bot are restart", false)
 
-	logger.Ok("All message are running")
+	logger.Ok("All handlers are running")
 
 	wg.Wait()
 }
 
-func NewMessagesHandler(baseBot *services.BaseBot, repository *mysql.Repository) *message.MessagesHandlers {
+func serviceLive() {
+	for {
+		model.HandleLiveTime.WithLabelValues("notion_setter").Inc()
+		time.Sleep(time.Second)
+	}
+}
+
+func newMessagesHandler(baseBot *services.BaseBot, repository *mysql.Repository) *message.MessagesHandlers {
 	handle := message.MessagesHandlers{
 		Handlers: map[string]model.Handler{},
 		BaseBot:  baseBot,
@@ -112,7 +117,7 @@ func NewMessagesHandler(baseBot *services.BaseBot, repository *mysql.Repository)
 	return &handle
 }
 
-func NewCallbackHandler(baseBot *services.BaseBot, repository *mysql.Repository) *callback.CallBackHandlers {
+func newCallbackHandler(baseBot *services.BaseBot, repository *mysql.Repository) *callback.CallBackHandlers {
 	handle := callback.CallBackHandlers{
 		Handlers: map[string]model.Handler{},
 		BaseBot:  baseBot,

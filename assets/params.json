@@ -1,11 +1,11 @@
 {
   "notion_task": {
     "872383555": {
-      "notion_title": "новая",
-      "notion_description": "задача",
+      "notion_title": "новая задача",
+      "notion_description": "новая задача",
       "notion_status": " ",
-      "notion_lang": "ar",
-      "notion_bot": "voice"
+      "notion_lang": "pt",
+      "notion_bot": "miner"
     }
   }
 }
