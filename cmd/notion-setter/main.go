@@ -4,10 +4,8 @@ import (
 	"github.com/BlackRRR/notion-setter/internal/api/model"
 	"github.com/BlackRRR/notion-setter/internal/api/repository/mysql"
 	"github.com/BlackRRR/notion-setter/internal/api/repository/redis"
-	"github.com/BlackRRR/notion-setter/internal/api/services"
 	"github.com/BlackRRR/notion-setter/internal/api/services/bot"
-	"github.com/BlackRRR/notion-setter/internal/api/services/callback"
-	"github.com/BlackRRR/notion-setter/internal/api/services/message"
+	"github.com/BlackRRR/notion-setter/internal/api/services/updates"
 	"github.com/BlackRRR/notion-setter/internal/api/utils"
 	"github.com/BlackRRR/notion-setter/internal/log"
 	"github.com/bots-empire/base-bot/msgs"
@@ -26,7 +24,6 @@ func main() {
 	logger := log.NewDefaultLogger().Prefix("notion-setter Bot")
 	log.PrintLogo("notion-setter Bot", []string{"8000FF"})
 
-	model.UploadParams()
 	bot.FillBotsConfig()
 
 	go startPrometheusHandler(logger)
@@ -39,17 +36,19 @@ func main() {
 	startHandlers(srvs, logger)
 }
 
-func startAllServices(log log.Logger) *services.BaseBot {
+func startAllServices(log log.Logger) *updates.BaseBot {
 	globalBot := bot.Bot
 	startBot(globalBot, log)
 	//1418862576, -1001736803459
 	service := msgs.NewService(globalBot, []int64{872383555})
 
 	rep := mysql.NewRepository(globalBot, service)
-	baseBot := services.NewBaseBotService(globalBot, rep, service)
+	baseBot := updates.NewBaseBotService(globalBot, rep, service)
 
 	globalBot.MessageHandler = newMessagesHandler(baseBot, rep)
 	globalBot.CallbackHandler = newCallbackHandler(baseBot, rep)
+
+	rep.DownloadParamsFromDB()
 
 	log.Ok("All services is running")
 	return baseBot
@@ -83,11 +82,11 @@ func startPrometheusHandler(logger log.Logger) {
 	}
 }
 
-func startHandlers(baseBot *services.BaseBot, logger log.Logger) {
+func startHandlers(baseBot *updates.BaseBot, logger log.Logger) {
 	wg := new(sync.WaitGroup)
 
 	wg.Add(1)
-	go func(handler *services.BaseBot, wg *sync.WaitGroup) {
+	go func(handler *updates.BaseBot, wg *sync.WaitGroup) {
 		defer wg.Done()
 		handler.ActionsWithUpdates(logger, utils.NewSpreader(time.Minute))
 	}(baseBot, wg)
@@ -106,8 +105,8 @@ func serviceLive() {
 	}
 }
 
-func newMessagesHandler(baseBot *services.BaseBot, repository *mysql.Repository) *message.MessagesHandlers {
-	handle := message.MessagesHandlers{
+func newMessagesHandler(baseBot *updates.BaseBot, repository *mysql.Repository) *updates.MessagesHandlers {
+	handle := updates.MessagesHandlers{
 		Handlers: map[string]model.Handler{},
 		BaseBot:  baseBot,
 		MySqlRep: repository,
@@ -117,8 +116,8 @@ func newMessagesHandler(baseBot *services.BaseBot, repository *mysql.Repository)
 	return &handle
 }
 
-func newCallbackHandler(baseBot *services.BaseBot, repository *mysql.Repository) *callback.CallBackHandlers {
-	handle := callback.CallBackHandlers{
+func newCallbackHandler(baseBot *updates.BaseBot, repository *mysql.Repository) *updates.CallBackHandlers {
+	handle := updates.CallBackHandlers{
 		Handlers: map[string]model.Handler{},
 		BaseBot:  baseBot,
 		MySqlRep: repository,

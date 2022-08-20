@@ -33,6 +33,45 @@ func userIDToRdb(userID int64) string {
 	return "user:" + strconv.FormatInt(userID, 10)
 }
 
+func userMsgIDToRdb(userID int64) string {
+	return "user_msg:" + strconv.FormatInt(userID, 10)
+}
+
+func RdbSetMessageID(ID int64, msgID int) {
+	userID := userMsgIDToRdb(ID)
+	mID := msgIDToRdb(msgID)
+	_, err := bot.Bot.Rdb.Set(userID, mID, 0).Result()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func msgIDToRdb(msgID int) string {
+	return strconv.Itoa(msgID)
+}
+
+func GetMsgID(userID int64) int {
+	uID := userMsgIDToRdb(userID)
+	have, err := bot.Bot.Rdb.Exists(uID).Result()
+	if err != nil {
+		log.Println(err)
+	}
+	if have == 0 {
+		return 0
+	}
+
+	value, err := bot.Bot.Rdb.Get(uID).Result()
+	if err != nil {
+		log.Println(err)
+	}
+
+	parseInt, err := strconv.Atoi(value)
+	if err != nil {
+		return 0
+	}
+	return parseInt
+}
+
 func GetLevel(id int64) string {
 	userID := userIDToRdb(id)
 	have, err := bot.Bot.Rdb.Exists(userID).Result()

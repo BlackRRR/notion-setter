@@ -6,6 +6,7 @@ import (
 	"github.com/BlackRRR/notion-setter/internal/api/model"
 	"github.com/BlackRRR/notion-setter/internal/api/services/bot"
 	"github.com/bots-empire/base-bot/msgs"
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/pkg/errors"
@@ -34,7 +35,8 @@ func UploadDataBase(dbLang string) *sql.DB {
 
 	dataBase.Exec("CREATE DATABASE IF NOT EXISTS " + config.DBconfig.Names[dbLang] + ";")
 	dataBase.Exec("USE " + config.DBconfig.Names[dbLang] + ";")
-	dataBase.Exec("CREATE TABLE IF NOT EXISTS users (" + config.UserTable + ");")
+	dataBase.Exec("CREATE TABLE IF NOT EXISTS users (" + config.UserTable + ";")
+	dataBase.Exec("CREATE TABLE IF NOT EXISTS tasks (" + config.Tasks + ");")
 
 	dataBase.Close()
 
@@ -130,4 +132,142 @@ func ReadUsers(rows *sql.Rows) ([]*model.User, error) {
 	}
 
 	return users, nil
+}
+
+func (r *Repository) DownloadParamsFromDB() {
+	rows, err := r.bot.GetDataBase().Query("SELECT * FROM tasks")
+	if err != nil {
+		log.Printf("error db query download params: %s", err.Error())
+	}
+
+	err = readRows(rows)
+	if err != nil {
+		log.Printf("error read rows download params: %s", err.Error())
+	}
+}
+
+func readRows(rows *sql.Rows) error {
+	var id int64
+	var param model.NotionTaskParams
+	for rows.Next() {
+		err := rows.Scan(
+			&id,
+			&param.NotionTitle,
+			&param.NotionStatus,
+			&param.NotionService,
+			&param.NotionLang,
+			&param.NotionDescription)
+		if err != nil {
+			return err
+		}
+
+		model.GlobalParameters.NotionTask[id] = &param
+	}
+
+	return nil
+}
+
+func (r *Repository) CreateTaskWithID(id int64) error {
+	params := model.NotionTaskParams{
+		NotionTitle:       " ",
+		NotionDescription: " ",
+		NotionStatus:      " ",
+		NotionLang:        " ",
+		NotionService:     " ",
+	}
+	_, err := r.bot.GetDataBase().Exec("INSERT INTO tasks VALUES (?, ?, ?, ?, ?, ?)",
+		&id,
+		&params.NotionTitle,
+		&params.NotionStatus,
+		&params.NotionService,
+		&params.NotionLang,
+		&params.NotionDescription,
+	)
+	if err != nil {
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadParamsToDB(id int64, params *model.NotionTaskParams) error {
+	_, err := r.bot.GetDataBase().Exec(`
+UPDATE tasks SET 
+                 title = ?, 
+                 status = ?, 
+                 service = ?, 
+                 lang = ?, 
+                 description = ? 
+             WHERE id = ?`,
+		&params.NotionTitle,
+		&params.NotionStatus,
+		&params.NotionService,
+		&params.NotionLang,
+		&params.NotionDescription,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadTitleTODB(id int64, title string) error {
+	_, err := r.bot.GetDataBase().Exec("UPDATE tasks SET title = ? WHERE id = ?",
+		&title,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadStatusTODB(id int64, status string) error {
+	_, err := r.bot.GetDataBase().Exec("UPDATE tasks SET status = ? WHERE id = ?",
+		&status,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadServiceTODB(id int64, service string) error {
+	_, err := r.bot.GetDataBase().Exec("UPDATE tasks SET service = ? WHERE id = ?",
+		&service,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadLangTODB(id int64, lang string) error {
+	_, err := r.bot.GetDataBase().Exec("UPDATE tasks SET lang = ? WHERE id = ?",
+		&lang,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) UploadDescriptionTODB(id int64, description string) error {
+	_, err := r.bot.GetDataBase().Exec("UPDATE tasks SET description = ? WHERE id = ?",
+		&description,
+		&id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

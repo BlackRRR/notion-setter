@@ -6,6 +6,7 @@ require (
 	github.com/bots-empire/base-bot v1.0.4
 	github.com/fatih/color v1.13.0
 	github.com/go-redis/redis v6.15.9+incompatible
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/jomei/notionapi v1.8.6
 	github.com/mbndr/figlet4go v0.0.0-20190224160619-d6cef5b186ea
@@ -16,7 +17,6 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect

@@ -41,9 +41,10 @@ type GlobalBot struct {
 	Commands map[string]string
 	Language map[string]map[string]string
 
-	BotToken    string `json:"bot_token,omitempty"`
-	BotLink     string `json:"bot_link,omitempty"`
-	NotionToken string `json:"notion_token,omitempty"`
+	BotToken       string `json:"bot_token,omitempty"`
+	BotLink        string `json:"bot_link,omitempty"`
+	NotionToken    string `json:"notion_token,omitempty"`
+	NotionDatabase string `json:"notion_database,omitempty"`
 }
 
 func FillBotsConfig() {

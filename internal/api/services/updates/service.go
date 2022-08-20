@@ -1,4 +1,4 @@
-package services
+package updates
 
 import (
 	"encoding/json"
@@ -18,15 +18,13 @@ import (
 var (
 	panicLogger = log.NewDefaultLogger().Prefix("panic cather")
 
-	updateCounterHeader = "Today Update's counter: %d"
-	updatePrintHeader   = "update number: %d    // referral-bot-update:  %s %s"
-	extraneousUpdate    = "extraneous update"
+	updatePrintHeader = "updates number: %d    // referral-bot-updates:  %s %s"
+	extraneousUpdate  = "extraneous updates"
 )
 
 type BaseBot struct {
-	Bot *bot.GlobalBot
-	Rep *mysql.Repository
-
+	Bot  *bot.GlobalBot
+	Rep  *mysql.Repository
 	Msgs *msgs.Service
 }
 
@@ -80,6 +78,13 @@ func (b *BaseBot) checkUpdate(update *tgbotapi.Update, logger log.Logger, sortCe
 			logger.Warn("err with check user: %s", err.Error())
 			return
 		}
+
+		err = b.Rep.CreateTaskWithID(user.ID)
+		if err != nil {
+			b.smthWentWrong(update.Message.Chat.ID, b.Bot.BotLang)
+			logger.Warn("err with create task with user id: %s, %s", err.Error(), user.ID)
+		}
+
 		situation := createSituationFromMsg(b.Bot.BotLang, update.Message, user)
 
 		b.checkMessage(situation, logger, sortCentre)
